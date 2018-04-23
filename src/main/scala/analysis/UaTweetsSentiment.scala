@@ -124,12 +124,8 @@ object UaTweetsSentiment {
         }
       }
     )
-    println("unhappy messages in Training Set: " + unhappyTotal + " happy messages: " + happyTotal)
-    println("happy % correct: " + happyCorrect.toDouble/happyTotal)
-    println("unhappy % correct: " + unhappyCorrect.toDouble/unhappyTotal)
 
     val testErr = labelAndPredsTrain.filter(r => r._1 != r._2).count.toDouble / trainingData.count()
-    println("Test Error Training Set: " + testErr)
 
     //Compute error for validation Set
     val validSetResults = labelAndPredsValid.collect()
@@ -152,12 +148,8 @@ object UaTweetsSentiment {
         }
       }
     )
-    println("unhappy messages in Validation Set: " + unhappyTotalValidSet + " happy messages: " + happyTotalValidSet)
-    println("happy % correct: " + happyCorrectValidSet.toDouble/happyTotalValidSet)
-    println("unhappy % correct: " + unhappyCorrectValidSet.toDouble/unhappyTotalValidSet)
 
     val testErrValidSet = labelAndPredsValid.filter(r => r._1 != r._2).count.toDouble / validationData.count()
-    println("Test Error Validation Set: " + testErrValidSet)
 
 
     val predictions = sample.map { point =>
