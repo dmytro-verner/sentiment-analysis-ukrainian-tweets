@@ -11,23 +11,26 @@ import scala.util.Try
 object UaTweetsSentiment {
   def main(args: Array[String]): Unit = {
 
+    val positiveLabelWord = "добрий"
+    val negativeLabelWord = "поганий"
+
     val conf = new SparkConf()
     conf.setMaster("local")
     conf.setAppName("Ua Tweets Sentiment Analysis")
     val sc = new SparkContext(conf)
     val sqlContext = new org.apache.spark.sql.SQLContext(sc)
 
-    val tweetDF = sqlContext.read.json("src/main/resources/tweets-up-to-20-04-unredacted.json")
+    val tweetDF = sqlContext.read.json("src/main/resources/dobryi-vs-poganyi/aggregate.json")
     tweetDF.show()
 
     val messages = tweetDF.select("msg")
     println("Total messages: " + messages.count())
 
-    val happyMessages = messages.filter(messages("msg").contains("добре"))
+    val happyMessages = messages.filter(messages("msg").contains(positiveLabelWord))
     val countHappy = happyMessages.count()
     println("Number of happy messages: " +  countHappy)
 
-    val unhappyMessages = messages.filter(messages("msg").contains("погано"))
+    val unhappyMessages = messages.filter(messages("msg").contains(negativeLabelWord))
     val countUnhappy = unhappyMessages.count()
     println("Unhappy Messages: " + countUnhappy)
 
@@ -43,13 +46,13 @@ object UaTweetsSentiment {
         Try{
           val msg = row(0).toString.toLowerCase()
           var isHappy:Int = 0
-          if(msg.contains("погано")){
+          if(msg.contains(negativeLabelWord)){
             isHappy = 0
-          }else if(msg.contains("добре")){
+          }else if(msg.contains(positiveLabelWord)){
             isHappy = 1
           }
-          var msgSanitized = msg.replaceAll("добре", "")
-          msgSanitized = msgSanitized.replaceAll("погано","")
+          var msgSanitized = msg.replaceAll(positiveLabelWord, "")
+          msgSanitized = msgSanitized.replaceAll(negativeLabelWord,"")
           //Return a tuple
           (isHappy, msgSanitized.split(" ").toSeq)
         }
