@@ -66,7 +66,7 @@ object UaTweetsSentiment {
     val labeledTweets = goodBadRecords.filter(_.isSuccess).map(_.get)
     println("total records with successes: " + labeledTweets.count())
 
-    //transform data
+    //Dictionary size - correlates with the quantity of training set
     val hashingTF = new HashingTF(2000)
 
     //Map the input strings to a tuple of labeled point + input text
