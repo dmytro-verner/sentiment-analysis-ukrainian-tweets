@@ -1,18 +1,22 @@
 package analysis
 
+import org.apache.spark.mllib.feature.HashingTF
+import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.tree.GradientBoostedTrees
 import org.apache.spark.mllib.tree.configuration.BoostingStrategy
 import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.mllib.regression.LabeledPoint
-import org.apache.spark.mllib.feature.HashingTF
 
 import scala.util.Try
 
 object UaTweetsSentiment {
-  def main(args: Array[String]): Unit = {
 
-    val positiveLabelWord = "добрий"
-    val negativeLabelWord = "поганий"
+  val positiveLabelWord = "добре"
+  val negativeLabelWord = "погано"
+
+  //dictionary size - correlates with the quantity of training set
+  val hashingTF = new HashingTF(2000)
+
+  def main(args: Array[String]): Unit = {
 
     val conf = new SparkConf()
     conf.setMaster("local")
@@ -20,23 +24,22 @@ object UaTweetsSentiment {
     val sc = new SparkContext(conf)
     val sqlContext = new org.apache.spark.sql.SQLContext(sc)
 
-    val tweetDF = sqlContext.read.json("src/main/resources/dobryi-vs-poganyi/aggregate.json")
-    tweetDF.show()
+    val tweetDF = sqlContext.read.json("src/main/resources/dobre-vs-pogano/aggregate-new-structure.json")
 
-    val messages = tweetDF.select("msg")
+    val messages = tweetDF.select("message", "isPositive")
     println("Total messages: " + messages.count())
 
-    val happyMessages = messages.filter(messages("msg").contains(positiveLabelWord))
-    val countHappy = happyMessages.count()
-    println("Number of happy messages: " +  countHappy)
+    val positiveMessages = messages.filter(messages("isPositive").contains(true))
+    val countPositive = positiveMessages.count()
+    println("Number of positive messages: " +  countPositive)
 
-    val unhappyMessages = messages.filter(messages("msg").contains(negativeLabelWord))
-    val countUnhappy = unhappyMessages.count()
-    println("Unhappy Messages: " + countUnhappy)
+    val negativeMessages = messages.filter(messages("isPositive").contains(false))
+    val countNegative = negativeMessages.count()
+    println("Number of negative messages: " + countNegative)
 
-    val smallestCommonCount = Math.min(countHappy, countUnhappy).toInt
+    val smallestCommonCount = Math.min(countPositive, countNegative).toInt
 
-    val tweets = happyMessages.limit(smallestCommonCount).unionAll(unhappyMessages.limit(smallestCommonCount))
+    val tweets = positiveMessages.limit(smallestCommonCount).unionAll(negativeMessages.limit(smallestCommonCount))
 
     val messagesRDD = tweets.rdd
     //filter out tweets that can't be parsed
@@ -65,9 +68,6 @@ object UaTweetsSentiment {
 
     val labeledTweets = positiveAndNegativeRecords.filter(_.isSuccess).map(_.get)
     println("total records with successes: " + labeledTweets.count())
-
-    //dictionary size - correlates with the quantity of training set
-    val hashingTF = new HashingTF(2000)
 
     //Map the input strings to a tuple of labeled point + input text
     val inputLabeled = labeledTweets.map(
