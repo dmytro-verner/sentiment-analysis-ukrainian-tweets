@@ -90,17 +90,17 @@ object UaTweetsSentiment {
     val model = GradientBoostedTrees.train(trainingData, boostingStrategy)
 
     // evaluate model on test instances and compute test error
-    val labelAndClassTrain = trainingData.map { point =>
+    val labelAndClassTrainingSet = trainingData.map { point =>
       val prediction = model.predict(point.features)
       Tuple2(point.label, prediction)
     }
 
-    val labelAndPredsValid = validationData.map { point =>
+    val labelAndClassValidationSet = validationData.map { point =>
       val prediction = model.predict(point.features)
       Tuple2(point.label, prediction)
     }
 
-    val results = labelAndClassTrain.collect()
+    val results = labelAndClassTrainingSet.collect()
 
     var happyTotal = 0
     var happyCorrect = 0
@@ -122,10 +122,10 @@ object UaTweetsSentiment {
     )
 
     //calculate test error
-    val testError = labelAndClassTrain.filter(r => r._1 != r._2).count.toDouble / trainingData.count()
+    val testErrorTrainingSet = labelAndClassTrainingSet.filter(r => r._1 != r._2).count.toDouble / trainingData.count()
 
     //pull up the results for validation set
-    val validSetResults = labelAndPredsValid.collect()
+    val validSetResults = labelAndClassValidationSet.collect()
 
     var happyTotalValidSet = 0
     var unhappyTotalValidSet = 0
@@ -146,8 +146,7 @@ object UaTweetsSentiment {
       }
     )
 
-    val testErrValidSet = labelAndPredsValid.filter(r => r._1 != r._2).count.toDouble / validationData.count()
-
+    val testErrorValidationSet = labelAndClassValidationSet.filter(r => r._1 != r._2).count.toDouble / validationData.count()
 
     val predictions = sampleSet.map {
       point =>
@@ -162,11 +161,11 @@ object UaTweetsSentiment {
     println("unhappy messages in Training Set: " + unhappyTotal + " happy messages: " + happyTotal)
     println("happy % correct: " + happyCorrect.toDouble/happyTotal)
     println("unhappy % correct: " + unhappyCorrect.toDouble/unhappyTotal)
-    println("Test Error Training Set: " + testError)
+    println("Test Error Training Set: " + testErrorTrainingSet)
 
     println("unhappy messages in Validation Set: " + unhappyTotalValidSet + " happy messages: " + happyTotalValidSet)
     println("happy % correct: " + happyCorrectValidSet.toDouble/happyTotalValidSet)
     println("unhappy % correct: " + unhappyCorrectValidSet.toDouble/unhappyTotalValidSet)
-    println("Test Error Validation Set: " + testErrValidSet)
+    println("Test Error Validation Set: " + testErrorValidationSet)
   }
 }
