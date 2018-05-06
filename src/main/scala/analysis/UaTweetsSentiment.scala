@@ -47,16 +47,16 @@ object UaTweetsSentiment {
       row =>{
         Try{
           val msg = row(0).toString.toLowerCase()
-          var isHappy:Int = 0
+          var isPositive:Int = 0
           if(msg.contains(negativeLabelWord)){
-            isHappy = 0
+            isPositive = 0
           }else if(msg.contains(positiveLabelWord)){
-            isHappy = 1
+            isPositive = 1
           }
           var messageSanitized = msg.replaceAll(positiveLabelWord, "")
           messageSanitized = messageSanitized.replaceAll(negativeLabelWord,"")
 
-          (isHappy, messageSanitized.split(" ").toSeq) //tuple returned
+          (isPositive, messageSanitized.split(" ").toSeq) //tuple returned
         }
       }
     )
@@ -102,21 +102,21 @@ object UaTweetsSentiment {
 
     val results = labelAndClassTrainingSet.collect()
 
-    var happyTotal = 0
-    var happyCorrect = 0
-    var unhappyTotal = 0
-    var unhappyCorrect = 0
+    var positiveTotal = 0
+    var positiveCorrect = 0
+    var negativeTotal = 0
+    var negativeCorrect = 0
     results.foreach(
       r => {
         if (r._1 == 1) {
-          happyTotal += 1
+          positiveTotal += 1
         } else if (r._1 == 0) {
-          unhappyTotal += 1
+          negativeTotal += 1
         }
         if (r._1 == 1 && r._2 ==1) {
-          happyCorrect += 1
+          positiveCorrect += 1
         } else if (r._1 == 0 && r._2 == 0) {
-          unhappyCorrect += 1
+          negativeCorrect += 1
         }
       }
     )
@@ -127,21 +127,21 @@ object UaTweetsSentiment {
     //pull up the results for validation set
     val validSetResults = labelAndClassValidationSet.collect()
 
-    var happyTotalValidSet = 0
-    var unhappyTotalValidSet = 0
-    var happyCorrectValidSet = 0
-    var unhappyCorrectValidSet = 0
+    var positiveTotalValidSet = 0
+    var negativeTotalValidSet = 0
+    var positiveCorrectValidSet = 0
+    var negativeCorrectValidSet = 0
     validSetResults.foreach(
       r => {
         if (r._1 == 1) {
-          happyTotalValidSet += 1
+          positiveTotalValidSet += 1
         } else if (r._1 == 0) {
-          unhappyTotalValidSet += 1
+          negativeTotalValidSet += 1
         }
         if (r._1 == 1 && r._2 ==1) {
-          happyCorrectValidSet += 1
+          positiveCorrectValidSet += 1
         } else if (r._1 == 0 && r._2 == 0) {
-          unhappyCorrectValidSet += 1
+          negativeCorrectValidSet += 1
         }
       }
     )
@@ -154,18 +154,18 @@ object UaTweetsSentiment {
         (point._1.label, classifiedValue, point._2)
     }
 
-    //the first value is the truth label. 1 is happy, 0 is unhappy.
+    //the first value is the real class label. 1 is positive, 0 is negative.
     //class is the second value
     predictions.take(100).foreach(x => println("label: " + x._1 + " class: " + x._2 + " text: " + x._3.mkString(" ")))
 
-    println("unhappy messages in Training Set: " + unhappyTotal + " happy messages: " + happyTotal)
-    println("happy % correct: " + happyCorrect.toDouble/happyTotal)
-    println("unhappy % correct: " + unhappyCorrect.toDouble/unhappyTotal)
+    println("negative messages in Training Set: " + negativeTotal + " positive messages: " + positiveTotal)
+    println("positive % correct: " + positiveCorrect.toDouble/positiveTotal)
+    println("negative % correct: " + negativeCorrect.toDouble/negativeTotal)
     println("Test Error Training Set: " + testErrorTrainingSet)
 
-    println("unhappy messages in Validation Set: " + unhappyTotalValidSet + " happy messages: " + happyTotalValidSet)
-    println("happy % correct: " + happyCorrectValidSet.toDouble/happyTotalValidSet)
-    println("unhappy % correct: " + unhappyCorrectValidSet.toDouble/unhappyTotalValidSet)
+    println("negative messages in Validation Set: " + negativeTotalValidSet + " positive messages: " + positiveTotalValidSet)
+    println("positive % correct: " + positiveCorrectValidSet.toDouble/positiveTotalValidSet)
+    println("negative % correct: " + negativeCorrectValidSet.toDouble/negativeTotalValidSet)
     println("Test Error Validation Set: " + testErrorValidationSet)
   }
 }
