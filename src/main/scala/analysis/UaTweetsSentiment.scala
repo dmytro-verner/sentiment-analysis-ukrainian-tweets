@@ -41,6 +41,8 @@ object UaTweetsSentiment {
 
     val tweets = positiveMessages.limit(smallestCommonCount).unionAll(negativeMessages.limit(smallestCommonCount))
 
+    println("!!! " + tweets.select("message").count())
+
     val messagesRDD = tweets.rdd
     //filter out tweets that can't be parsed
     val positiveAndNegativeRecords = messagesRDD.map(
@@ -83,9 +85,9 @@ object UaTweetsSentiment {
     val (trainingData, validationData) = (splits(0), splits(1))
 
     val boostingStrategy = BoostingStrategy.defaultParams("Classification")
-    boostingStrategy.setNumIterations(20)
+    boostingStrategy.setNumIterations(30)
     boostingStrategy.treeStrategy.setNumClasses(2)
-    boostingStrategy.treeStrategy.setMaxDepth(5)
+    boostingStrategy.treeStrategy.setMaxDepth(6)
 
     val model = GradientBoostedTrees.train(trainingData, boostingStrategy)
 
