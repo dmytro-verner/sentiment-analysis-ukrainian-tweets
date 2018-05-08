@@ -11,7 +11,8 @@ import scala.util.Try
 object UaTweetsSentiment {
 
   val positiveLabelWord = "добре"
-  val negativeLabelWord = "погано"
+  val negativeFirstLabelWord = "погано"
+  val negativeSecondLabelWord = "поганий"
 
   //dictionary size - correlates with the quantity of training set
   val hashingTF = new HashingTF(2000)
@@ -50,13 +51,14 @@ object UaTweetsSentiment {
         Try{
           val msg = row(0).toString.toLowerCase()
           var isPositive:Int = 0
-          if(msg.contains(negativeLabelWord)){
+          //filter by two negative words
+          if(msg.contains(negativeFirstLabelWord) || msg.contains(negativeSecondLabelWord)){
             isPositive = 0
           }else if(msg.contains(positiveLabelWord)){
             isPositive = 1
           }
           var messageSanitized = msg.replaceAll(positiveLabelWord, "")
-          messageSanitized = messageSanitized.replaceAll(negativeLabelWord,"")
+          messageSanitized = messageSanitized.replaceAll(negativeFirstLabelWord,"").replaceAll(negativeSecondLabelWord, "")
 
           (isPositive, messageSanitized.split(" ").toSeq) //tuple returned
         }
