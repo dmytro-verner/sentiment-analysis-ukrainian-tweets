@@ -50,17 +50,19 @@ object UaTweetsSentiment {
       row =>{
         Try{
           val msg = row(0).toString.toLowerCase()
-          var isPositive:Int = 0
+          val isPositiveStatus = row(1).toString.toLowerCase()
+          var isPositiveLabel = 0
           //filter by two negative words
-          if(msg.contains(negativeFirstLabelWord) || msg.contains(negativeSecondLabelWord)){
-            isPositive = 0
-          }else if(msg.contains(positiveLabelWord)){
-            isPositive = 1
+          if(isPositiveStatus == "true"){
+            isPositiveLabel = 1
+          }else if(isPositiveStatus == "false"){
+            isPositiveLabel = 0
           }
           var messageSanitized = msg.replaceAll(positiveLabelWord, "")
-          messageSanitized = messageSanitized.replaceAll(negativeFirstLabelWord,"").replaceAll(negativeSecondLabelWord, "")
+                                    .replaceAll(negativeFirstLabelWord,"")
+                                    .replaceAll(negativeSecondLabelWord, "")
 
-          (isPositive, messageSanitized.split(" ").toSeq) //tuple returned
+          (isPositiveLabel, messageSanitized.split(" ").toSeq) //tuple returned
         }
       }
     )
