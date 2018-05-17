@@ -4,6 +4,8 @@ import org.apache.spark.mllib.feature.HashingTF
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.tree.GradientBoostedTrees
 import org.apache.spark.mllib.tree.configuration.BoostingStrategy
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.Row
 import org.apache.spark.{SparkConf, SparkContext}
 
 import scala.util.Try
@@ -18,6 +20,8 @@ object UaTweetsSentiment {
   val hashingTF = new HashingTF(2000)
 
   def main(args: Array[String]): Unit = {
+
+    val startTime = System.nanoTime()
 
     val conf = new SparkConf()
     conf.setMaster("local")
@@ -42,38 +46,9 @@ object UaTweetsSentiment {
 
     val tweets = positiveMessages.limit(smallestCommonCount).unionAll(negativeMessages.limit(smallestCommonCount))
 
-    println("!!! " + tweets.select("message").count())
-
     val messagesRDD = tweets.rdd
     //filter out tweets that can't be parsed
-    val positiveAndNegativeRecords = messagesRDD.map(
-      row =>{
-        Try{
-          val msg = row(0).toString.toLowerCase()
-          val isPositiveStatus = row(1).toString.toLowerCase()
-          var isPositiveLabel = 0
-          //filter by two negative words
-          if(isPositiveStatus == "true"){
-            isPositiveLabel = 1
-          }else if(isPositiveStatus == "false"){
-            isPositiveLabel = 0
-          }
-          var messageSanitized = msg.replaceAll(positiveLabelWord, "")
-                                    .replaceAll(negativeFirstLabelWord,"")
-                                    .replaceAll(negativeSecondLabelWord, "")
-
-          (isPositiveLabel, messageSanitized.split(" ").toSeq) //tuple returned
-        }
-      }
-    )
-
-    //filter out exceptions
-    val exceptions = positiveAndNegativeRecords.filter(_.isFailure)
-    println("total records with exceptions: " + exceptions.count())
-    exceptions.take(10).foreach(x => println(x.failed))
-
-    val labeledTweets = positiveAndNegativeRecords.filter(_.isSuccess).map(_.get)
-    println("total records with successes: " + labeledTweets.count())
+    val labeledTweets = getLabeledTweets(messagesRDD)
 
     //Map the input strings to a tuple of labeled point + input text
     val inputLabeled = labeledTweets.map(
@@ -164,6 +139,8 @@ object UaTweetsSentiment {
     //class is the second value
     predictions.take(100).foreach(x => println("label: " + x._1 + " class: " + x._2 + " text: " + x._3.mkString(" ")))
 
+    val endTime = System.nanoTime()
+
     println("negative messages in Training Set: " + negativeTotal + " positive messages: " + positiveTotal)
     println("positive % correct: " + positiveCorrect.toDouble/positiveTotal)
     println("negative % correct: " + negativeCorrect.toDouble/negativeTotal)
@@ -173,5 +150,42 @@ object UaTweetsSentiment {
     println("positive % correct: " + positiveCorrectValidSet.toDouble/positiveTotalValidSet)
     println("negative % correct: " + negativeCorrectValidSet.toDouble/negativeTotalValidSet)
     println("Test Error Validation Set: " + testErrorValidationSet)
+
+    println("Elapsed time: " + (endTime - startTime) / 1E9 + "secs")
+  }
+
+  def getLabeledTweets(messagesRDD: RDD[Row]): RDD[(Int, Seq[String])] ={
+    //filter out tweets that can't be parsed
+    val positiveAndNegativeRecords = messagesRDD.map(
+      row =>{
+        Try{
+          val msg = row(0).toString.toLowerCase()
+          val isPositiveStatus = row(1).toString.toLowerCase()
+          var isPositiveLabel = 0
+          //filter by two negative words
+          if(isPositiveStatus == "true"){
+            isPositiveLabel = 1
+          }else if(isPositiveStatus == "false"){
+            isPositiveLabel = 0
+          }
+          val messageSanitized = msg.replaceAll(positiveLabelWord, "")
+            .replaceAll(negativeFirstLabelWord, "")
+            .replaceAll(negativeSecondLabelWord, "")
+
+          (isPositiveLabel, messageSanitized.split(" ").toSeq) //tuple returned
+        }
+      }
+    )
+
+    //filter out exceptions
+    val exceptions = positiveAndNegativeRecords.filter(_.isFailure)
+    println("Total records with exceptions: " + exceptions.count())
+    exceptions.take(10).foreach(x => println(x.failed))
+
+    val labeledTweets = positiveAndNegativeRecords.filter(_.isSuccess).map(_.get)
+    println("Total records with successes: " + labeledTweets.count())
+
+    //return successfully parsed tweets
+    labeledTweets
   }
 }
