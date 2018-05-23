@@ -36,30 +36,33 @@ object UaTweetsSentiment {
 
     val positiveMessages = messages.filter(messages("isPositive").contains(true))
     val countPositive = positiveMessages.count()
-    println("Number of positive messages: " +  countPositive)
 
     val negativeMessages = messages.filter(messages("isPositive").contains(false))
     val countNegative = negativeMessages.count()
+
+    println("Number of positive messages: " +  countPositive)
     println("Number of negative messages: " + countNegative)
 
     val smallestCommonCount = Math.min(countPositive, countNegative).toInt
 
-    val tweets = positiveMessages.limit(smallestCommonCount).unionAll(negativeMessages.limit(smallestCommonCount))
+    val messagesWorkingSet = positiveMessages.limit(smallestCommonCount).unionAll(negativeMessages.limit(smallestCommonCount))
 
-    val messagesRDD = tweets.rdd
+    val messagesRDD = messagesWorkingSet.rdd
     //filter out tweets that can't be parsed
     val labeledTweets = getLabeledTweets(messagesRDD)
 
-    //Map the input strings to a tuple of labeled point + input text
+    //Map the input strings to a tuple of labeled point and input text
     val inputLabeled = labeledTweets.map(
       t => (t._1, hashingTF.transform(t._2)))
       .map(x => new LabeledPoint(x._1.toDouble, x._2))
+
+    inputLabeled.take(5).foreach(println)
 
     val sampleSet = labeledTweets.take(1000).map(
       t => (t._1, hashingTF.transform(t._2), t._2))
       .map(x => (new LabeledPoint(x._1.toDouble, x._2), x._3))
 
-    // split the data into training and validation sets (30% held out for validation testing)
+    // separate the data into two sets (30% held out for validation testing)
     val splits = inputLabeled.randomSplit(Array(0.7, 0.3))
     val (trainingData, validationData) = (splits(0), splits(1))
 
@@ -168,7 +171,7 @@ object UaTweetsSentiment {
           }else if(isPositiveStatus == "false"){
             isPositiveLabel = 0
           }
-          val messageSanitized = msg.replaceAll(positiveLabelWord, "")
+          val messageSanitized = msg.toLowerCase().replaceAll(positiveLabelWord, "")
             .replaceAll(negativeFirstLabelWord, "")
             .replaceAll(negativeSecondLabelWord, "")
 
@@ -184,6 +187,8 @@ object UaTweetsSentiment {
 
     val labeledTweets = positiveAndNegativeRecords.filter(_.isSuccess).map(_.get)
     println("Total records with successes: " + labeledTweets.count())
+
+    labeledTweets.take(5).foreach(x => println(x))
 
     //return successfully parsed tweets
     labeledTweets
